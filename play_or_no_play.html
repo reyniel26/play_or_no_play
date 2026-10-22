@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#142238">
+<title>Play or No Play? — Daily Check-in</title>
+<style>
+  :root {
+    --navy:#142238; --ink:#172b49; --muted:#5d6f88; --line:#dfe8f3;
+    --blue:#2476f3; --green:#159866; --red:#d94343; --amber:#b77908;
+    --paper:#fff; --bg:#f4f7fb; --soft-blue:#eef6ff; --soft-green:#eaf8f1;
+    --soft-red:#fff0ef; --soft-amber:#fff7e3; --shadow:0 8px 24px rgba(22,46,80,.06);
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Inter, ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); line-height:1.55; }
+  .hero { color:#fff; background:radial-gradient(ellipse at 85% 0%,#29486b 0%,transparent 40%),linear-gradient(120deg,#142238,#1b2b42); padding:34px 22px 32px; }
+  .hero-inner { max-width:1180px; margin:auto; display:flex; align-items:center; gap:20px; }
+  .game-icon { flex:none; font-size:46px; width:68px; height:68px; display:grid; place-items:center; background:#ffffff12; border:1px solid #ffffff22; border-radius:20px; }
+  h1 { margin:0; font-size:clamp(2rem,5vw,3.25rem); line-height:1.12; letter-spacing:-.045em; }
+  h1 .play { color:#5cdbab; } h1 .no-play { color:#ff9d91; }
+  .hero p { margin:10px 0 0; color:#d7e3f1; font-size:1rem; }
+  .hero .tagline { margin-top:5px; color:#aebfd4; font-size:.92rem; }
+  main { max-width:1180px; margin:26px auto 44px; padding:0 20px; display:grid; grid-template-columns:minmax(0,1.55fr) minmax(300px,.92fr); gap:22px; align-items:start; }
+  .left,.right { display:grid; gap:14px; }
+  .notice { background:var(--soft-blue); border:1px solid #cfe4ff; border-radius:13px; padding:17px 18px; display:flex; gap:12px; color:#24466e; }
+  .notice .symbol { font-size:1.35rem; flex:none; }
+  .notice p { margin:0; font-size:.94rem; }
+  .question { background:var(--paper); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:18px; }
+  .question-head { display:grid; grid-template-columns:40px 32px 1fr; gap:12px; align-items:center; margin-bottom:15px; }
+  .number { width:38px; height:38px; border-radius:50%; color:white; display:grid; place-items:center; font-weight:800; font-size:1.05rem; }
+  .q1 .number{background:#52b638}.q2 .number{background:#3987f5}.q3 .number{background:#8755e9}.q4 .number{background:#f5a21b}.q5 .number{background:#f05a60}
+  .q-icon { font-size:1.5rem; text-align:center; }
+  .question h2 { margin:0; font-size:1rem; line-height:1.4; letter-spacing:-.01em; }
+  .choices { border-top:1px solid #edf1f6; padding-top:14px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 12px; }
+  .q1 .choices { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  label.choice { display:flex; align-items:flex-start; gap:9px; border:1px solid transparent; padding:9px 8px; border-radius:9px; cursor:pointer; color:#405674; font-size:.9rem; min-height:46px; }
+  label.choice:hover { background:#f7faff; border-color:#e0ebfb; }
+  label.choice:has(input:checked) { background:#eef5ff; border-color:#8ebaff; color:#1b4d91; }
+  input[type=radio] { accent-color:var(--blue); margin:4px 0 0; flex:none; width:17px; height:17px; }
+  .evaluate { border:0; width:100%; border-radius:10px; padding:14px 18px; background:linear-gradient(90deg,#2877f4,#1765e7); color:#fff; font-size:1rem; font-weight:750; cursor:pointer; box-shadow:0 5px 14px #2877f42b; }
+  .evaluate:hover { filter:brightness(1.05); transform:translateY(-1px); }
+  .evaluate:focus-visible,button:focus-visible { outline:3px solid #91bdff; outline-offset:3px; }
+  .result { display:none; border-radius:14px; padding:20px; border:1px solid var(--line); background:#fff; box-shadow:var(--shadow); }
+  .result.show { display:block; animation:appear .22s ease-out; }
+  @keyframes appear { from { opacity:0; transform:translateY(5px) } to {opacity:1;transform:translateY(0)} }
+  .result .result-kicker { font-weight:800; text-transform:uppercase; font-size:.75rem; letter-spacing:.1em; color:var(--muted); }
+  .result h2 { margin:6px 0 8px; font-size:1.75rem; line-height:1.2; }
+  .result p { margin:0 0 12px; }
+  .result .next-step { border-top:1px solid #00000012; margin-top:13px; padding-top:13px; font-weight:650; }
+  .result.play { background:var(--soft-green); border-color:#bce9d2; }
+  .result.play h2 { color:#08764a; }
+  .result.pause { background:var(--soft-red); border-color:#ffd0cd; }
+  .result.pause h2 { color:#b72d2d; }
+  .result.break { background:var(--soft-amber); border-color:#f3dfaa; }
+  .result.break h2 { color:#946000; }
+  .result.partial { background:var(--soft-blue); border-color:#cfe4ff; }
+  .result.partial h2 { color:#1f5fb9; }
+  .reset-row { display:flex; justify-content:flex-end; margin-top:12px; }
+  .reset { border:1px solid #cdd9e8; background:#fff; color:#334966; padding:9px 13px; border-radius:9px; font-weight:650; cursor:pointer; }
+  .side-card { background:#fff; border:1px solid var(--line); border-radius:13px; padding:17px; box-shadow:var(--shadow); }
+  .side-card h2 { margin:0 0 12px; font-size:1.02rem; display:flex; gap:9px; align-items:center; }
+  .side-card h2 span { font-size:1.15rem; }
+  .guide-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 0; border-top:1px solid #eaf0f6; font-size:.86rem; }
+  .guide-row:first-of-type { border-top:0; padding-top:0; }
+  .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:.72rem; font-weight:850; margin-bottom:4px; }
+  .pill.green { background:#d8f5e7; color:#08764a; }.pill.amber{background:#fff0bf;color:#825400}.pill.red{background:#ffe0de;color:#b72d2d}.pill.blue{background:#deebff;color:#1e5db5}.pill.gray{background:#e7edf5;color:#344966}
+  .guide-row p { margin:0; color:var(--muted); }
+  .reset-list { list-style:none; margin:0; padding:0; display:grid; gap:11px; }
+  .reset-list li { display:grid; grid-template-columns:28px 1fr; gap:9px; font-size:.87rem; color:#4c607b; }
+  .step { display:grid; place-items:center; width:26px; height:26px; border-radius:50%; color:white; background:#347df1; font-weight:800; font-size:.8rem; }
+  .reset-list strong { color:#203957; }
+  .contract { background:linear-gradient(120deg,#f3efff,#faf8ff); border-color:#dfd4ff; }
+  .contract h2 { color:#5530b5; }
+  .contract ul { list-style:none; margin:0; padding:0; display:grid; gap:9px; font-size:.87rem; color:#4d4771; }
+  .contract li::before { content:"✓"; color:#7047cf; font-weight:900; margin-right:8px; }
+  footer { max-width:1180px; margin:0 auto; padding:0 20px 28px; color:#71829a; font-size:.82rem; text-align:center; }
+  footer strong { color:#435872; }
+  @media(max-width:850px) { main { grid-template-columns:1fr; } .right { grid-row:2; } }
+  @media(max-width:560px) {
+    .hero { padding:26px 17px; } .hero-inner { align-items:flex-start; gap:13px; } .game-icon { width:48px;height:48px;font-size:30px;border-radius:14px; }
+    main { margin-top:16px; padding:0 12px; gap:14px; } .question { padding:14px; }
+    .question-head { grid-template-columns:34px 25px 1fr; gap:8px; } .number { width:32px;height:32px; }
+    .choices,.q1 .choices { grid-template-columns:1fr; gap:2px; } label.choice { min-height:0; padding:8px; }
+    .guide-row { grid-template-columns:1fr; gap:5px; } .side-card { padding:15px; }
+  }
+  @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="game-icon" aria-hidden="true">🎮</div>
+    <div>
+      <h1><span class="play">Play</span> or <span class="no-play">No Play?</span></h1>
+      <p>A simple decision tool to help you choose what's best for you.</p>
+      <p class="tagline">Do the right things first. Then enjoy your games — without guilt.</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="left" aria-label="Decision questions">
+    <div class="notice"><span class="symbol" aria-hidden="true">ℹ️</span><p>Answer these five questions honestly, not based on how you feel about gaming, but on what's best for your goals and well-being. This is your personal checkpoint, not a judgment of your worth.</p></div>
+
+    <form id="decision-form">
+      <section class="question q1">
+        <div class="question-head"><span class="number">1</span><span class="q-icon" aria-hidden="true">🎯</span><h2>Have I completed today's most important task, or my minimum acceptable progress on it?</h2></div>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="task" value="done" required><span>Yes, I've done enough for today.</span></label>
+          <label class="choice"><input type="radio" name="task" value="partial"><span>Partially — I made meaningful progress.</span></label>
+          <label class="choice"><input type="radio" name="task" value="notdone"><span>No, I haven't started or made enough progress.</span></label>
+        </div>
+      </section>
+
+      <section class="question q2" style="margin-top:14px">
+        <div class="question-head"><span class="number">2</span><span class="q-icon" aria-hidden="true">📋</span><h2>Have I handled my essential responsibilities?</h2></div>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="responsibilities" value="yes" required><span>Yes, they're handled.</span></label>
+          <label class="choice"><input type="radio" name="responsibilities" value="no"><span>No, something important is still pending.</span></label>
+        </div>
+      </section>
+
+      <section class="question q3" style="margin-top:14px">
+        <div class="question-head"><span class="number">3</span><span class="q-icon" aria-hidden="true">🕒</span><h2>Am I choosing to play during genuine free time?</h2></div>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="freetime" value="yes" required><span>Yes, I have time available.</span></label>
+          <label class="choice"><input type="radio" name="freetime" value="no"><span>No, I'm avoiding a task or sacrificing sleep.</span></label>
+        </div>
+      </section>
+
+      <section class="question q4" style="margin-top:14px">
+        <div class="question-head"><span class="number">4</span><span class="q-icon" aria-hidden="true">🧠</span><h2>Why do I want to play right now?</h2></div>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="motivation" value="recreation" required><span>I genuinely want recreation and can stop when planned.</span></label>
+          <label class="choice"><input type="radio" name="motivation" value="escape"><span>I'm bored, frustrated, guilty, or escaping my responsibilities.</span></label>
+        </div>
+      </section>
+
+      <section class="question q5" style="margin-top:14px">
+        <div class="question-head"><span class="number">5</span><span class="q-icon" aria-hidden="true">🛑</span><h2>Have I decided on a specific stopping time?</h2></div>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="stopping" value="yes" required><span>Yes, with an alarm set.</span></label>
+          <label class="choice"><input type="radio" name="stopping" value="no"><span>No, I'll probably play until I feel like stopping.</span></label>
+        </div>
+      </section>
+
+      <button class="evaluate" type="submit" style="margin-top:14px">✨ Evaluate My Answers</button>
+    </form>
+
+    <section id="result" class="result" role="status" aria-live="polite" aria-atomic="true">
+      <div class="result-kicker">Your decision</div>
+      <h2 id="result-title"></h2>
+      <p id="result-copy"></p>
+      <p class="next-step" id="result-next"></p>
+      <div class="reset-row"><button class="reset" type="button" id="reset-button">Reset answers</button></div>
+    </section>
+  </section>
+
+  <aside class="right">
+    <section class="side-card">
+      <h2><span aria-hidden="true">🧭</span> Decision Guide</h2>
+      <div class="guide-row"><div>Priority done, responsibilities handled, and time available</div><div><span class="pill green">PLAY</span><p>Enjoy it without guilt.</p></div></div>
+      <div class="guide-row"><div>Task partly done, with a reasonable stopping point</div><div><span class="pill amber">FINISH & REASSESS</span><p>Complete the minimum, then decide.</p></div></div>
+      <div class="guide-row"><div>Important task untouched because of gaming or procrastination</div><div><span class="pill red">NO PLAY YET</span><p>Complete a focused work block first.</p></div></div>
+      <div class="guide-row"><div>Tired, upset, or trying to escape a problem</div><div><span class="pill blue">TAKE A BREAK</span><p>Rest, eat, shower, walk, or calm down first.</p></div></div>
+      <div class="guide-row"><div>Gaming would interfere with sleep or tomorrow's responsibilities</div><div><span class="pill gray">STOP FOR TODAY</span><p>Your future self will thank you.</p></div></div>
+    </section>
+
+    <section class="side-card">
+      <h2><span aria-hidden="true">💡</span> If You Fail the Test: 15-Minute Reset</h2>
+      <ol class="reset-list">
+        <li><span class="step">1</span><div><strong>Disconnect.</strong> Close the game and put your phone or controller away.</div></li>
+        <li><span class="step">2</span><div><strong>Ground yourself.</strong> Stand up, drink water, and take five slow breaths. Be kind to yourself.</div></li>
+        <li><span class="step">3</span><div><strong>Choose one task.</strong> Write down the smallest meaningful action you can finish.</div></li>
+        <li><span class="step">4</span><div><strong>Work for 15 minutes.</strong> No gaming, social media, or switching tasks during this block.</div></li>
+        <li><span class="step">5</span><div><strong>Reassess.</strong> Continue if needed. If your minimum target is complete and you have time, choose a limited gaming session.</div></li>
+      </ol>
+    </section>
+
+    <section class="side-card contract">
+      <h2><span aria-hidden="true">📜</span> Your Gaming Contract</h2>
+      <ul>
+        <li><strong>Before gaming:</strong> I must complete my minimum daily target.</li>
+        <li><strong>While gaming:</strong> I must have a stopping time and honor it.</li>
+        <li><strong>After a setback:</strong> I will do one useful thing rather than surrender the rest of my day.</li>
+      </ul>
+    </section>
+  </aside>
+</main>
+<footer>⛰️ <strong>Discipline today = Freedom tomorrow.</strong> Missing a target doesn't make you a failure. Reset, then choose your next action.</footer>
+
+<script>
+(() => {
+  const form = document.getElementById('decision-form');
+  const result = document.getElementById('result');
+  const title = document.getElementById('result-title');
+  const copy = document.getElementById('result-copy');
+  const next = document.getElementById('result-next');
+
+  function showResult(kind, heading, message, action) {
+    result.className = 'result show ' + kind;
+    title.textContent = heading;
+    copy.textContent = message;
+    next.textContent = action;
+    result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    const answers = Object.fromEntries(new FormData(form).entries());
+
+    // Protect sleep and essential responsibilities first.
+    if (answers.freetime === 'no') {
+      showResult('pause', 'NO PLAY YET', 'Right now, gaming would compete with a responsibility or your sleep.', 'Next step: Close the game launcher and do one 15-minute work block. Reassess after that.');
+      return;
+    }
+    if (answers.responsibilities === 'no') {
+      showResult('pause', 'NO PLAY YET', 'An important responsibility still needs your attention.', 'Next step: Choose the most urgent item and make a small, concrete start before gaming.');
+      return;
+    }
+    if (answers.motivation === 'escape') {
+      showResult('break', 'TAKE A BREAK FIRST', 'You may be reaching for a game to avoid an uncomfortable feeling. You do not need to fix the whole day right now.', 'Next step: Step away for five minutes, drink water, breathe slowly, then choose one small useful action.');
+      return;
+    }
+    if (answers.stopping === 'no') {
+      showResult('pause', 'SET A STOPPING TIME FIRST', 'A session without a clear limit can easily take over more time than you intended.', 'Next step: Choose a realistic end time and set an alarm. If you cannot commit to stopping, skip gaming for now.');
+      return;
+    }
+    if (answers.task === 'notdone') {
+      showResult('pause', 'NO PLAY YET', 'Your main target for today is still untouched or needs more progress.', 'Next step: Work for 15 minutes on the smallest meaningful part of that task, then reassess. You do not need to recover every lost hour.');
+      return;
+    }
+    if (answers.task === 'partial') {
+      showResult('partial', 'FINISH YOUR MINIMUM, THEN REASSESS', 'You have made progress, but your target is not fully at the minimum you set for yourself.', 'Next step: If practical, complete one final focused 15-minute block. Then check your time and responsibilities again.');
+      return;
+    }
+    showResult('play', 'PLAY — ENJOY IT WITHOUT GUILT', 'Your priority target is done, your essential responsibilities are handled, and you have time available.', 'Next step: Start your planned session, honor your alarm, and stop at the time you chose.');
+  });
+
+  document.getElementById('reset-button').addEventListener('click', () => {
+    form.reset();
+    result.className = 'result';
+    title.textContent = '';
+    copy.textContent = '';
+    next.textContent = '';
+    form.querySelector('input[type="radio"]').focus();
+  });
+})();
+</script>
+</body>
+</html>
